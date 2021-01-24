@@ -1,0 +1,22 @@
+{
+  "name": "libbetterauth2",
+  "version": "0.0.1",
+  "description": "Very simple (and better) public key-based authentication toolkit",
+  "main": "index.js",
+  "author": "M",
+  "license": "UNLICENSED",
+  "private": false,
+  "dependencies": {
+    "date-fns": "^2.16.1",
+    "lodash.isstring": "^4.0.1",
+    "lodash.omit": "^4.5.0",
+    "tweetnacl": "^1.0.3"
+  },
+  "devDependencies": {
+    "eslint": "^7.18.0",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1"
+  }
+}
