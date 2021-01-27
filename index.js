@@ -16,11 +16,14 @@ class InvalidDataError extends BetterAuthError {}
 exports.BetterAuthError = BetterAuthError
 exports.InvalidDataError = InvalidDataError
 
-exports.generateKeyPairFromPW = async function generateKeyPairFromPW (pw, salt) {
+exports.generateKeyPairFromPW = async function generateKeyPairFromPW (pw, salt, {
+  iterations = 10e5,
+  hashAlgo = 'BLAKE2b512'
+} = {}) {
   const {
     secretKey,
     publicKey
-  } = await tweetnacl.sign.keyPair.fromSeed(await pbkdf(pw, salt, 10e5, 32, 'BLAKE2b512'))
+  } = await tweetnacl.sign.keyPair.fromSeed(await pbkdf(pw, salt, iterations, 32, hashAlgo))
 
   return {
     secretKey,
