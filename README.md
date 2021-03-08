@@ -1,8 +1,8 @@
 ## Installation
 
 ```shell
-npm install git+https://github.com/the1337guy/libbetterauth
-yarn add git+https://github.com/the1337guy/libbetterauth
+npm install git+https://github.com/mmjee/libbetterauth
+yarn add git+https://github.com/mmjee/libbetterauth
 ```
 
 ## What & Why
