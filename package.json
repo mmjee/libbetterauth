@@ -1,5 +1,5 @@
 {
-  "name": "libbetterauth2",
+  "name": "libbetterauth",
   "version": "0.0.1",
   "description": "Very simple (and better) public key-based authentication toolkit",
   "main": "index.js",
