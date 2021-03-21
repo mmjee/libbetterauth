@@ -42,7 +42,7 @@ exports.generateKeyPairFromPW = async function generateKeyPairFromPW (pw, salt, 
 
   return {
     secretKey,
-    publicKey: Buffer.from(publicKey).toString('base64')
+    publicKey
   }
 }
 
@@ -71,10 +71,9 @@ exports.verifyData = function verifyData (data, key) {
   }
 
   const datawithoutsig = Buffer.from(JSON.stringify(omit(data, '_sig')))
-  const akey = Buffer.from(key, 'base64')
   const sig = Buffer.from(data._sig, 'base64')
 
-  return tweetnacl.sign.detached.verify(datawithoutsig, sig, akey)
+  return tweetnacl.sign.detached.verify(datawithoutsig, sig, key)
 }
 
 /*
