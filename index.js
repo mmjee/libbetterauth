@@ -33,7 +33,7 @@ exports.InvalidDataError = InvalidDataError
 
 exports.generateKeyPairFromPW = async function generateKeyPairFromPW (pw, salt, {
   iterations = 10e5,
-  hashAlgo = 'BLAKE2b512'
+  hashAlgo = 'sha512'
 } = {}) {
   const {
     secretKey,
