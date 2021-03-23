@@ -1,4 +1,4 @@
-
+const isString = require('lodash.isstring')
 const { verifyData } = require('./index')
 
 module.exports = function (getUser, pickPublicKey) {
@@ -8,6 +8,9 @@ module.exports = function (getUser, pickPublicKey) {
       body = req.body
     } else if (req.query._sig && req.query.timestamp && req.query.userID) {
       body = req.query
+      if (isString(body.timestamp)) {
+        body.timestamp = Number(body.timestamp)
+      }
     }
     if (body) {
       const user = await getUser(body.userID)
@@ -20,7 +23,13 @@ module.exports = function (getUser, pickPublicKey) {
         return
       }
       const pubKey = pickPublicKey(user)
-      const validated = verifyData(body, pubKey)
+      let validated = false
+      try {
+        validated = verifyData(body, pubKey)
+      } catch (e) {
+        throw e
+        // TODO handle statistics?
+      }
       if (!validated) {
         res.status(401).send({
           error: true,
@@ -28,6 +37,7 @@ module.exports = function (getUser, pickPublicKey) {
         })
         return
       }
+      console.log('Validated:', validated)
       req.user = user
     }
 
