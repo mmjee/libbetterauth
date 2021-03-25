@@ -41,8 +41,8 @@ exports.generateKeyPairFromPW = async function generateKeyPairFromPW (pw, salt, 
   } = await tweetnacl.sign.keyPair.fromSeed(await pbkdf(pw, salt, iterations, 32, hashAlgo))
 
   return {
-    secretKey,
-    publicKey
+    secretKey: Buffer.from(secretKey),
+    publicKey: Buffer.from(publicKey)
   }
 }
 

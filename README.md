@@ -21,13 +21,12 @@ const { secretKey, publicKey } = await libbetterauth.generateKeyPairFromPW(passw
 // Store secretKey locally in memory or put that in localStorage or something
 // Send publicKey via API or something
 
-// Sign objects (client-side)
+// Sign objects (client-side) (your_data must contain userID if you want to make it compatible with the express middleware, see below)
 // NOTE: your_data is the payload
 const signed = await libbetterauth.signObject(your_data, secretKey)
 
 // Send signed over API and validate on server-side
 // NOTE: I'm assuming in real life scenarios,
-// the (claimed) ID of the user will be included in your_data and will be used in the server to look up the public key
 const validated = await libbetterauth.verifyData(signed, publicKey)
 // validated is either true or false
 // If validated is true, we are sure that the data came from the user.
@@ -40,3 +39,23 @@ PBKDF2 is used to derive a 32-byte seed from the supplied password and salt, whi
 `signObject` (presumably used before every API request) adds a timestamp and signs the request with the private key. (`timestamp` is a Number  and `_sig` is the signature, base64-encoded)
 
 `verifyData` (presumably used server-side for authentication) verifies whether the timestamp is in the last 5 minutes and then verifies whether the signature was made by the claimed user's public key.
+
+## (semi)-opinionated express middleware
+
+There's also an included express middleware to easily implement this server-side
+
+```javascript
+const betterAuthMiddleware = require('libbetterauth/express')
+
+// Do this after you preferably include body-parser or an alternative
+app.use(betterAuthMiddleware(/* getUser */ function (userID) {
+  // The purpose of this function is to find a User object for the provided user ID (as transmitted in the user, MAY NOT BE CORRECT)
+  return User.findById(userID) // You can also implement it like User.findOne({ email: userID }) if you are sure that email is a unique enough identifier
+}, /* pickPublicKey */ function (user) {
+  // The purpose of this function is to return the public key which you have stored in the user object
+  return user.publicKey // or, user.pubkey, or user.pk, or... whatever
+}))
+// If authentication is MANDATORY, or otherwise req.user will only be available if authentication succeeds
+app.use(betterAuthMiddleware.authenticationMandatory)
+// In all subsequent middleware and route handlers, the user object will be available in req.user as returned by getUser
+```
