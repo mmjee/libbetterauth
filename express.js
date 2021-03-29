@@ -37,7 +37,6 @@ module.exports = function (getUser, pickPublicKey) {
         })
         return
       }
-      console.log('Validated:', validated)
       req.user = user
     }
 
