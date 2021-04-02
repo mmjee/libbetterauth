@@ -1,4 +1,5 @@
 const isString = require('lodash.isstring')
+const omit = require('lodash.omit')
 const { verifyData } = require('./index')
 
 module.exports = function (getUser, pickPublicKey) {
@@ -6,11 +7,21 @@ module.exports = function (getUser, pickPublicKey) {
     let body
     if (req.body._sig && req.body.timestamp && req.body.userID) {
       body = req.body
+      req.body = omit(body, [
+        '_sig',
+        'timestamp',
+        'userID'
+      ])
     } else if (req.query._sig && req.query.timestamp && req.query.userID) {
       body = req.query
       if (isString(body.timestamp)) {
         body.timestamp = Number(body.timestamp)
       }
+      req.query = omit(body, [
+        '_sig',
+        'timestamp',
+        'userID'
+      ])
     }
     if (body) {
       const user = await getUser(body.userID)
