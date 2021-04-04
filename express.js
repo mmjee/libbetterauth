@@ -29,7 +29,7 @@ module.exports = function (getUser, pickPublicKey) {
         // res.status(401).header('WWW-Authenticate', 'SignedMessage').send()
         res.status(401).send({
           error: true,
-          errorMessage: 'NO_USER_ID'
+          errorCode: 'NO_USER_ID'
         })
         return
       }
@@ -44,7 +44,7 @@ module.exports = function (getUser, pickPublicKey) {
       if (!validated) {
         res.status(401).send({
           error: true,
-          errorMessage: 'VERIFICATION_FAILED'
+          errorCode: 'VERIFICATION_FAILED'
         })
         return
       }
@@ -59,7 +59,7 @@ module.exports.authenticationMandatory = function (req, res, next) {
   if (!req.user) {
     res.status(403).send({
       error: true,
-      errorMessage: 'AUTHENTICATION_MANDATORY'
+      errorCode: 'AUTHENTICATION_MANDATORY'
     })
   } else {
     next()
