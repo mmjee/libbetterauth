@@ -1,4 +1,5 @@
 const isString = require('lodash.isstring')
+const omit = require('lodash.omit')
 const { verifyData } = require('./index')
 
 module.exports = function (getUser, pickPublicKey) {
@@ -6,11 +7,21 @@ module.exports = function (getUser, pickPublicKey) {
     let body
     if (req.body._sig && req.body.timestamp && req.body.userID) {
       body = req.body
+      req.body = omit(body, [
+        '_sig',
+        'timestamp',
+        'userID'
+      ])
     } else if (req.query._sig && req.query.timestamp && req.query.userID) {
       body = req.query
       if (isString(body.timestamp)) {
         body.timestamp = Number(body.timestamp)
       }
+      req.query = omit(body, [
+        '_sig',
+        'timestamp',
+        'userID'
+      ])
     }
     if (body) {
       const user = await getUser(body.userID)
@@ -18,7 +29,7 @@ module.exports = function (getUser, pickPublicKey) {
         // res.status(401).header('WWW-Authenticate', 'SignedMessage').send()
         res.status(401).send({
           error: true,
-          errorMessage: 'NO_USER_ID'
+          errorCode: 'NO_USER_ID'
         })
         return
       }
@@ -33,7 +44,7 @@ module.exports = function (getUser, pickPublicKey) {
       if (!validated) {
         res.status(401).send({
           error: true,
-          errorMessage: 'VERIFICATION_FAILED'
+          errorCode: 'VERIFICATION_FAILED'
         })
         return
       }
@@ -48,7 +59,7 @@ module.exports.authenticationMandatory = function (req, res, next) {
   if (!req.user) {
     res.status(403).send({
       error: true,
-      errorMessage: 'AUTHENTICATION_MANDATORY'
+      errorCode: 'AUTHENTICATION_MANDATORY'
     })
   } else {
     next()
