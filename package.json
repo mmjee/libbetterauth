@@ -10,6 +10,7 @@
     "date-fns": "^2.16.1",
     "lodash.isstring": "^4.0.1",
     "lodash.omit": "^4.5.0",
+    "msgpackr": "git+https://git.maharshi.ninja/root/msgpackr-without-exports.git",
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {

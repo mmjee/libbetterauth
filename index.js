@@ -16,6 +16,7 @@
 const { promisify } = require('util')
 const { pbkdf2 } = require('crypto')
 const tweetnacl = require('tweetnacl')
+const msgpackr = require('msgpackr/dist/index')
 
 const toDate = require('date-fns/toDate')
 const isAfter = require('date-fns/isAfter')
@@ -70,7 +71,7 @@ exports.verifyData = function verifyData (data, key) {
     throw new InvalidDataError('Data has expired signature')
   }
 
-  const datawithoutsig = Buffer.from(JSON.stringify(omit(data, '_sig')))
+  const datawithoutsig = msgpackr.encode(omit(data, '_sig'))
   const sig = Buffer.from(data._sig, 'base64')
 
   return tweetnacl.sign.detached.verify(datawithoutsig, sig, key)
@@ -82,7 +83,7 @@ exports.verifyData = function verifyData (data, key) {
  */
 exports.signObject = function signObject (data, key) {
   data.timestamp = Date.now()
-  const datawithoutsig = Buffer.from(JSON.stringify(data))
+  const datawithoutsig = msgpackr.encode(data)
   const sig = tweetnacl.sign.detached(datawithoutsig, key)
   data._sig = Buffer.from(sig).toString('base64')
   return data
