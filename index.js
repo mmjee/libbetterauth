@@ -16,7 +16,7 @@
 const { promisify } = require('util')
 const { pbkdf2 } = require('crypto')
 const tweetnacl = require('tweetnacl')
-const msgpackr = require('msgpackr/dist/index')
+const msgpackr = require('msgpackr')
 
 const toDate = require('date-fns/toDate')
 const isAfter = require('date-fns/isAfter')
