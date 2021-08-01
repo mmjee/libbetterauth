@@ -38,8 +38,7 @@ module.exports = function (getUser, pickPublicKey) {
       try {
         validated = verifyData(body, pubKey)
       } catch (e) {
-        throw e
-        // TODO handle statistics?
+        console.warn('libbetterauth: Caught error at verifyData', e)
       }
       if (!validated) {
         res.status(401).send({
