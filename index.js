@@ -21,10 +21,8 @@ const msgpackr = require('msgpackr')
 const toDate = require('date-fns/toDate')
 const isAfter = require('date-fns/isAfter')
 const sub = require('date-fns/sub')
-const isString = require('lodash.isstring')
-const omit = require('lodash.omit')
 
-const pbkdf = promisify(pbkdf2)
+const pbkdf2Promisified = promisify(pbkdf2)
 
 class BetterAuthError extends Error {}
 class InvalidDataError extends BetterAuthError {}
@@ -39,7 +37,7 @@ exports.generateKeyPairFromPW = async function generateKeyPairFromPW (pw, salt, 
   const {
     secretKey,
     publicKey
-  } = await tweetnacl.sign.keyPair.fromSeed(await pbkdf(pw, salt, iterations, 32, hashAlgo))
+  } = await tweetnacl.sign.keyPair.fromSeed(await pbkdf2Promisified(pw, salt, iterations, 32, hashAlgo))
 
   return {
     secretKey: Buffer.from(secretKey),
@@ -56,12 +54,16 @@ exports.generateRandomKP = function generateRandomKP () {
  * @param {Object} data The user-supplied password
  * @returns {Object} The verified data
  */
-exports.verifyData = function verifyData (data, key) {
+exports.verifyData = function verifyData (input, key) {
+  const outdata = tweetnacl.sign.open(input, key)
+  if (outdata == null) {
+    throw new InvalidDataError('Data has invalid signature')
+  }
+
+  const data = msgpackr.decode(outdata)
+
   if (!Number.isFinite(data.timestamp)) {
     throw new InvalidDataError('Data has no timestamp')
-  }
-  if (!isString(data._sig) && data._sig.length !== 88) {
-    throw new InvalidDataError('Data has no or invalid signature')
   }
   const fiveminuteago = sub(new Date(), {
     minutes: 5
@@ -71,10 +73,7 @@ exports.verifyData = function verifyData (data, key) {
     throw new InvalidDataError('Data has expired signature')
   }
 
-  const datawithoutsig = msgpackr.encode(omit(data, '_sig'))
-  const sig = Buffer.from(data._sig, 'base64')
-
-  return tweetnacl.sign.detached.verify(datawithoutsig, sig, key)
+  return data
 }
 
 /*
@@ -83,8 +82,5 @@ exports.verifyData = function verifyData (data, key) {
  */
 exports.signObject = function signObject (data, key) {
   data.timestamp = Date.now()
-  const datawithoutsig = msgpackr.encode(data)
-  const sig = tweetnacl.sign.detached(datawithoutsig, key)
-  data._sig = Buffer.from(sig).toString('base64')
-  return data
+  return tweetnacl.sign(msgpackr.encode(data), key)
 }
