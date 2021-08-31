@@ -50,8 +50,47 @@ module.exports = function (getUser, pickPublicKey) {
         }
         break
       case 'GET':
-      case 'HEAD':
+      case 'HEAD': {
+        const queryPos = req.originalUrl.indexOf('?')
+        if (queryPos === -1) {
+          next()
+          return
+        }
+        // Skip the ?
+        const queryString = req.originalUrl.slice(queryPos + 1)
+        try {
+          let buf, decoded
+          try {
+            buf = Buffer.from(queryString, 'base64url')
+            decoded = msgpackr.decode(buf)
+          } catch (e) {
+            next()
+            return
+          }
+          const user = await getUser(decoded.userID)
+          if (!user) {
+            res.status(401).send({
+              error: true,
+              errorCode: 'NO_USER_ID'
+            })
+            return
+          }
+
+          const pubKey = pickPublicKey(user)
+          req.body = omit(verifyData(buf, decoded, pubKey), [
+            'userID',
+            'timestamp'
+          ])
+
+          req.user = user
+        } catch (e) {
+          res.status(401).send({
+            error: true,
+            errorCode: 'AUTHENTICATION_ERROR'
+          })
+        }
         break
+      }
     }
   }
 }
