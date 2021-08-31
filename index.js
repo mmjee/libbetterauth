@@ -54,26 +54,24 @@ exports.generateRandomKP = function generateRandomKP () {
  * @param {Object} data The user-supplied password
  * @returns {Object} The verified data
  */
-exports.verifyData = function verifyData (input, key) {
-  const outdata = tweetnacl.sign.open(input, key)
-  if (outdata == null) {
+exports.verifyData = function verifyData (encodedData, decodedData, key) {
+  const isSigValid = tweetnacl.sign.detached.verify(encodedData.slice(tweetnacl.sign.signatureLength), encodedData.slice(0, tweetnacl.sign.signatureLength), key)
+  if (!isSigValid) {
     throw new InvalidDataError('Data has invalid signature')
   }
 
-  const data = msgpackr.decode(outdata)
-
-  if (!Number.isFinite(data.timestamp)) {
+  if (!Number.isFinite(decodedData.timestamp)) {
     throw new InvalidDataError('Data has no timestamp')
   }
   const fiveminuteago = sub(new Date(), {
     minutes: 5
   })
   // If signed timestamp is not within the past 5 minutes, throw error
-  if (!isAfter(toDate(data.timestamp), fiveminuteago)) {
+  if (!isAfter(toDate(decodedData.timestamp), fiveminuteago)) {
     throw new InvalidDataError('Data has expired signature')
   }
 
-  return data
+  return decodedData
 }
 
 /*
@@ -82,5 +80,8 @@ exports.verifyData = function verifyData (input, key) {
  */
 exports.signObject = function signObject (data, key) {
   data.timestamp = Date.now()
-  return tweetnacl.sign(msgpackr.encode(data), key)
+  const encoded = msgpackr.encode(data)
+
+  const sig = tweetnacl.sign.detached(encoded, key)
+  return Buffer.concat([sig, encoded])
 }

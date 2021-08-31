@@ -1,56 +1,58 @@
-const isString = require('lodash.isstring')
+const bodyParser = require('body-parser')
+const msgpackr = require('msgpackr')
 const omit = require('lodash.omit')
+
 const { verifyData } = require('./index')
+
+const rawParser = bodyParser.raw({
+  type: 'application/x-libbetterauth-signed-msgpack'
+})
 
 module.exports = function (getUser, pickPublicKey) {
   return async function (req, res, next) {
-    let body
-    if (req.body._sig && req.body.timestamp && req.body.userID) {
-      body = req.body
-      req.body = omit(body, [
-        '_sig',
-        'timestamp',
-        'userID'
-      ])
-    } else if (req.query._sig && req.query.timestamp && req.query.userID) {
-      body = req.query
-      if (isString(body.timestamp)) {
-        body.timestamp = Number(body.timestamp)
-      }
-      req.query = omit(body, [
-        '_sig',
-        'timestamp',
-        'userID'
-      ])
-    }
-    if (body) {
-      const user = await getUser(body.userID)
-      if (!user) {
-        // res.status(401).header('WWW-Authenticate', 'SignedMessage').send()
-        res.status(401).send({
-          error: true,
-          errorCode: 'NO_USER_ID'
-        })
-        return
-      }
-      const pubKey = pickPublicKey(user)
-      let validated = false
-      try {
-        validated = verifyData(body, pubKey)
-      } catch (e) {
-        console.warn('libbetterauth: Caught error at verifyData', e)
-      }
-      if (!validated) {
-        res.status(401).send({
-          error: true,
-          errorCode: 'VERIFICATION_FAILED'
-        })
-        return
-      }
-      req.user = user
-    }
+    switch (req.method) {
+      case 'POST':
+      case 'PUT':
+      case 'DELETE':
+      case 'PATCH':
+        if (req.headers['content-type'] !== 'application/x-libbetterauth-signed-msgpack') {
+          next()
+          return
+        }
+        try {
+          await new Promise((resolve) => {
+            return rawParser(req, res, resolve)
+          })
+          const decodedData = msgpackr.decode(req.body)
+          const user = await getUser(decodedData.userID)
+          if (!user) {
+            // res.status(401).header('WWW-Authenticate', 'SignedMessage').send()
+            res.status(401).send({
+              error: true,
+              errorCode: 'NO_USER_ID'
+            })
+            return
+          }
 
-    next()
+          const pubKey = pickPublicKey(user)
+          req.body = omit(verifyData(req.body, decodedData, pubKey), [
+            'userID',
+            'timestamp'
+          ])
+
+          req.user = user
+          next()
+        } catch (e) {
+          res.status(401).send({
+            error: true,
+            errorCode: 'AUTHENTICATION_ERROR'
+          })
+        }
+        break
+      case 'GET':
+      case 'HEAD':
+        break
+    }
   }
 }
 
