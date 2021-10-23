@@ -23,12 +23,13 @@ const { secretKey, publicKey } = await libbetterauth.generateKeyPairFromPW(passw
 
 // Sign objects (client-side) (your_data must contain userID if you want to make it compatible with the express middleware, see below)
 // NOTE: your_data is the payload
-const signed = await libbetterauth.signObject(your_data, secretKey)
+const [timestamped_data, sig] = await libbetterauth.signObject(your_data, secretKey)
 
-// Send signed over API and validate on server-side
+// Send timestamped_data over API and validate on server-side
+// Transport sig over the 'Authorization' header
 // NOTE: I'm assuming in real life scenarios,
-const validated = await libbetterauth.verifyData(signed, publicKey)
-// validated is either true or false
+const validated = await libbetterauth.verifyData(timestamped_data, publicKey, headers.get('authentication'))
+// validated is either true or false, or will throw an error
 // If validated is true, we are sure that the data came from the user.
 ```
 
