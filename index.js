@@ -54,7 +54,7 @@ exports.generateRandomKP = function generateRandomKP () {
  * @param {Object} data The user-supplied password
  * @returns {Object} The verified data
  */
-exports.verifyData = function verifyData (data, key, rawSig) {
+exports.verifyData = function verifyData (data, rawSig, key) {
   const sig = Buffer.from(rawSig, 'base64')
 
   if (!Number.isFinite(data.timestamp)) {

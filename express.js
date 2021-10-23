@@ -44,7 +44,7 @@ module.exports = function (getUser, pickPublicKey) {
     const pubKey = pickPublicKey(user)
     let validated = false
     try {
-      validated = verifyData(body, pubKey, sig)
+      validated = verifyData(body, sig, pubKey)
     } catch (e) {
       console.warn('libbetterauth: Caught error at verifyData', e)
     }

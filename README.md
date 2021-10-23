@@ -61,6 +61,45 @@ app.use(betterAuthMiddleware.authenticationMandatory)
 // In all subsequent middleware and route handlers, the user object will be available in req.user as returned by getUser
 ```
 
+### How I typically use LBA on the client side
+
+```javascript
+// Usually a Vuex action
+function makeRequest ({ state }, body) {
+  const sBody = body
+
+  if (state.isAuthenticated) {
+    let sig
+
+    if (sBody.params) {
+      sBody.params.userID = state.userID
+      const [params, _sig] = libbetterauth.signObject(sBody.params, state.secretKey)
+      sBody.params = params
+      sig = _sig
+    } else if (sBody.data) {
+      sBody.data.userID = state.userID
+      const [data, _sig] = libbetterauth.signObject(sBody.data, state.secretKey)
+      sBody.data = data
+      sig = _sig
+    } else {
+      const [params, _sig] = libbetterauth.signObject({
+        userID: state.userID
+      }, state.secretKey)
+      sBody.params = params
+      sig = _sig
+    }
+
+    if (!isPlainObject(sBody.headers)) {
+      sBody.headers = {}
+    }
+    sBody.headers.Authorization = sig
+  }
+
+  // Often further wrapped for error handling and et cetra
+  return axios(sBody)
+}
+```
+
 ### Licensing
 
 Copyright (C) 2021 Maharshi Mukherjee
