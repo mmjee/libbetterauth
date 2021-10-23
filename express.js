@@ -1,55 +1,56 @@
 const isString = require('lodash.isstring')
-const omit = require('lodash.omit')
 const { verifyData } = require('./index')
 
 module.exports = function (getUser, pickPublicKey) {
   return async function (req, res, next) {
     let body
-    if (req.body._sig && req.body.timestamp && req.body.userID) {
-      body = req.body
-      req.body = omit(body, [
-        '_sig',
-        'timestamp',
-        'userID'
-      ])
-    } else if (req.query._sig && req.query.timestamp && req.query.userID) {
-      body = req.query
-      if (isString(body.timestamp)) {
-        body.timestamp = Number(body.timestamp)
+
+    const sig = req.get('Authorization')
+    if (sig != null) {
+      switch (req.method) {
+        case 'GET':
+        case 'HEAD':
+          body = req.query
+          body.timestamp = Number(body.timestamp)
+          break
+        default:
+          body = req.body
+          break
       }
-      req.query = omit(body, [
-        '_sig',
-        'timestamp',
-        'userID'
-      ])
-    }
-    if (body) {
-      const user = await getUser(body.userID)
-      if (!user) {
-        // res.status(401).header('WWW-Authenticate', 'SignedMessage').send()
-        res.status(401).send({
-          error: true,
-          errorCode: 'NO_USER_ID'
-        })
-        return
-      }
-      const pubKey = pickPublicKey(user)
-      let validated = false
-      try {
-        validated = verifyData(body, pubKey)
-      } catch (e) {
-        console.warn('libbetterauth: Caught error at verifyData', e)
-      }
-      if (!validated) {
-        res.status(401).send({
-          error: true,
-          errorCode: 'VERIFICATION_FAILED'
-        })
-        return
-      }
-      req.user = user
+    } else {
+      return next()
     }
 
+    if (!isString(body.userID)) {
+      return next()
+    }
+
+    const user = await getUser(body.userID)
+    if (!user) {
+      // res.status(401).header('WWW-Authenticate', 'SignedMessage').send()
+      res.status(401).send({
+        error: true,
+        errorCode: 'NO_USER_ID'
+      })
+      return
+    }
+
+    const pubKey = pickPublicKey(user)
+    let validated = false
+    try {
+      validated = verifyData(body, pubKey, sig)
+    } catch (e) {
+      console.warn('libbetterauth: Caught error at verifyData', e)
+    }
+    if (!validated) {
+      res.status(401).send({
+        error: true,
+        errorCode: 'VERIFICATION_FAILED'
+      })
+      return
+    }
+
+    req.user = user
     next()
   }
 }

@@ -21,8 +21,6 @@ const msgpackr = require('msgpackr')
 const toDate = require('date-fns/toDate')
 const isAfter = require('date-fns/isAfter')
 const sub = require('date-fns/sub')
-const isString = require('lodash.isstring')
-const omit = require('lodash.omit')
 
 const pbkdf = promisify(pbkdf2)
 
@@ -56,11 +54,13 @@ exports.generateRandomKP = function generateRandomKP () {
  * @param {Object} data The user-supplied password
  * @returns {Object} The verified data
  */
-exports.verifyData = function verifyData (data, key) {
+exports.verifyData = function verifyData (data, key, rawSig) {
+  const sig = Buffer.from(rawSig, 'base64')
+
   if (!Number.isFinite(data.timestamp)) {
     throw new InvalidDataError('Data has no timestamp')
   }
-  if (!isString(data._sig) && data._sig.length !== 88) {
+  if (sig.length !== tweetnacl.sign.signatureLength) {
     throw new InvalidDataError('Data has no or invalid signature')
   }
   const fiveminuteago = sub(new Date(), {
@@ -71,10 +71,7 @@ exports.verifyData = function verifyData (data, key) {
     throw new InvalidDataError('Data has expired signature')
   }
 
-  const datawithoutsig = msgpackr.encode(omit(data, '_sig'))
-  const sig = Buffer.from(data._sig, 'base64')
-
-  return tweetnacl.sign.detached.verify(datawithoutsig, sig, key)
+  return tweetnacl.sign.detached.verify(msgpackr.encode(data), sig, key)
 }
 
 /*
@@ -83,8 +80,7 @@ exports.verifyData = function verifyData (data, key) {
  */
 exports.signObject = function signObject (data, key) {
   data.timestamp = Date.now()
-  const datawithoutsig = msgpackr.encode(data)
-  const sig = tweetnacl.sign.detached(datawithoutsig, key)
-  data._sig = Buffer.from(sig).toString('base64')
-  return data
+  const buf = msgpackr.encode(data)
+  const sig = Buffer.from(tweetnacl.sign.detached(buf, key))
+  return [data, sig.toString('base64')]
 }
