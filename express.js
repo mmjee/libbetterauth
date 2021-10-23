@@ -1,5 +1,11 @@
-const isString = require('lodash.isstring')
+const _isString = require('lodash.isstring')
+const _omit = require('lodash.omit')
 const { verifyData } = require('./index')
+
+const FIELDS_TO_OMIT = [
+  'userID',
+  'timestamp'
+]
 
 module.exports = function (getUser, pickPublicKey) {
   return async function (req, res, next) {
@@ -21,7 +27,7 @@ module.exports = function (getUser, pickPublicKey) {
       return next()
     }
 
-    if (!isString(body.userID)) {
+    if (!_isString(body.userID)) {
       return next()
     }
 
@@ -48,6 +54,16 @@ module.exports = function (getUser, pickPublicKey) {
         errorCode: 'VERIFICATION_FAILED'
       })
       return
+    }
+
+    switch (req.method) {
+      case 'GET':
+      case 'HEAD':
+        req.query = _omit(req.query, FIELDS_TO_OMIT)
+        break
+      default:
+        req.body = _omit(req.body, FIELDS_TO_OMIT)
+        break
     }
 
     req.user = user
